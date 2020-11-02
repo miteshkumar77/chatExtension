@@ -1,0 +1,20 @@
+{
+  "manifest_version": 2,
+  "name": "Youtube Chat Extension",
+  "description": "This extension allows you to chat on YouTube.",
+  "version": "0.0.1",
+  "permissions": [
+    "tabs",
+    "webNavigation"
+  ],
+  "browser_action": {
+    "default_popup": "index.html",
+    "default_title": "Open the popup"
+  },
+  "icons": {
+    "16": "favicon.ico",
+    "48": "logo192.png",
+    "128": "logo512.png"
+  },
+  "content_security_policy": "script-src 'self' 'sha256-kBGlrAU1XjUQ9jS7afzbuneXxs9bApQO4erXKmzoHSA='; object-src 'self'"
+}
