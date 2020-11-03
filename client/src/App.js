@@ -20,13 +20,15 @@ function getVideoID(url) {
 
 function App() {
 
-  const [currentUrl, changeCurrentUrl] = useState("");
-  const [activeTabIsYouTube, changeActiveTabIsYoutube] = useState(false);
+  const activeTabIsYouTube = true;
+  const currentUrl = "https://www.youtube.com/watch?v=oqVMTwH_PMY";
+  // const [currentUrl, changeCurrentUrl] = useState("");
+  // const [activeTabIsYouTube, changeActiveTabIsYoutube] = useState(false);
 
-  chrome.tabs.query({ active: true }, (tab_arr) => {
-    changeCurrentUrl(tab_arr[0].url);
-    changeActiveTabIsYoutube(isUrlYoutubeVideo(tab_arr[0].url));
-  });
+  // chrome.tabs.query({ active: true }, (tab_arr) => {
+  //   changeCurrentUrl(tab_arr[0].url);
+  //   changeActiveTabIsYoutube(isUrlYoutubeVideo(tab_arr[0].url));
+  // });
 
   if (activeTabIsYouTube) {
     return <Chat videoID={getVideoID(currentUrl)} />
