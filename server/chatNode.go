@@ -73,6 +73,7 @@ func (this *PubSubMgr) BroadcastMessage(incomingMessage *Message) error {
 	var err error
 	incomingMessage.UserID = 0
 	for k := range this.videos[videoID] {
+		println("Sending a message to: " + k.userName + ".")
 		err = this.broadcastMessageToSock(incomingMessage, k.sockConn)
 	}
 	return err

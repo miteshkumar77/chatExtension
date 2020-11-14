@@ -1,26 +1,41 @@
-import { React, useState } from 'react'
-import Form from './Form'
+import { React, useState, useRef, useEffect } from 'react'
+import { Card, CardBody, CardTitle, CardSubtitle, FormInput, Button, Alert } from "shards-react";
 
+import Form from './Form'
+import Pane from './Pane'
 const skt_endpoint = 'ws://localhost:5678/ws';
+var socket;
+var userToken = {}
+var isLoaded = false;
 
 function Chat({ videoID }) {
 
   var username = "";
-  var userToken = {}
-  var socket;
 
-
+  // { msgText: "Hi usrnm!", userName: "usrnm2", userID: 91616, timeStamp: "apples", videoID: "ax45fpj9" }
   const [messages, setMessages] = useState([])
   const [closed, toggleClosed] = useState(true);
   const [loaded, toggleLoaded] = useState(false);
+  const [currentMessage, setCurrentMessage] = useState();
+  const fieldRef = useRef(null);
 
+  // useEffect(() => {
+  //   if (fieldRef.current != null) {
+  //     window.scrollTo(0, fieldRef.current.offsetTop)
+  //   }
+  // }, [messages])
 
   const addNewMessage = (msg) => {
-    setMessages(messages.slice(Math.max(messages.length - 20, 0), messages.length).push(msg));
+    console.log("adding message")
+    // console.log(`first: ${Math.max(messages.length - 20, 0)}  second: ${messages.length}...`)
+    console.log([...messages.slice(Math.max(messages.length - 20, 0), messages.length), msg])
+    setMessages([...messages.slice(Math.max(messages.length - 20, 0), messages.length), msg]);
     console.log(messages);
   }
 
   const pushMessage = (msg) => {
+    console.log(socket);
+    console.log(msg);
     socket.send(JSON.stringify(msg));
   }
 
@@ -32,6 +47,7 @@ function Chat({ videoID }) {
 
     socket.onopen = (_) => {
       console.log(userToken);
+      console.log(socket)
       socket.send(JSON.stringify(userToken))
     }
 
@@ -39,10 +55,15 @@ function Chat({ videoID }) {
       toggleClosed(true);
     }
     socket.onmessage = (ev) => {
-      if (!loaded) {
+      console.log("DATA")
+      console.log(ev.data)
+      console.log(loaded)
+      if (!isLoaded) {
         userToken.userID = JSON.parse(ev.data).userID;
-        toggleLoaded(true);
-        console.log(userToken)
+        (() => {
+          isLoaded = true;
+          toggleLoaded(true);
+        })()
       } else {
         addNewMessage(JSON.parse(ev.data))
       }
@@ -58,7 +79,38 @@ function Chat({ videoID }) {
   } else if (loaded) {
     return (
       <div>
-        Chat should appear!
+        {/* styles="overflow:scroll" */}
+        <div >
+          {
+
+            messages.map((msg) => {
+              return (
+                <Pane
+                  own={msg.userID == userToken.userID}
+                  msg={msg.msgText}
+                  username={msg.userName}
+                  color={0}
+                />
+              );
+            })
+          }
+          <div className="field" ref={fieldRef} />
+        </div>
+        <FormInput placeholder="Enter nickname" onChange={(e) => { setCurrentMessage(e.target.value) }} />
+        <Button theme="success" onClick={() => {
+
+          const msg_to_send = {
+            msgText: currentMessage,
+            userName: username,
+            userID: userToken.userID,
+            timeStamp: "hello",
+            videoID: userToken.videoID
+          }
+            (() => {
+              pushMessage(msg_to_send);
+              setCurrentMessage("");
+            })();
+        }}>Continue</Button>
       </div>
     )
   } else {
