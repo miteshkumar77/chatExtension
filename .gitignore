@@ -2,3 +2,4 @@ extension/
 .vscode
 bin/
 serverfake/
+pkg/

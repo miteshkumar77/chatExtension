@@ -3,3 +3,9 @@ build:
 
 run:
 	go run ./src/main.go ./src/safeQueue.go ./src/types.go ./src/chatNode.go
+
+clean:
+	rm -rf bin/*
+
+install:
+	go install ./src/main.go ./src/safeQueue.go ./src/types.go ./src/chatNode.go
