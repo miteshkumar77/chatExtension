@@ -54,7 +54,6 @@ func wsEndpoint(w http.ResponseWriter, r *http.Request, jobs *SafeQueue, mgr *Pu
 	if err != nil {
 		println("Error decoding json body!")
 		log.Fatal(err)
-
 	}
 
 	t.UserID = mgr.Connect(t.UserName, t.VideoID, ws)
