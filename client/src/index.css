@@ -5,7 +5,7 @@ body {
     sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  /* min-width: 400px; */
+  min-width: 400px;
   max-width: 400px;
   /* min-height: 500px; */
   max-height: 500%;
