@@ -1,124 +1,61 @@
-import { React, useState, useRef, useEffect } from 'react'
-import { Card, CardBody, CardTitle, CardSubtitle, FormInput, Button, Alert } from "shards-react";
+import React, { useState, createRef, useEffect } from 'react'
+import './Chat.css';
+import Pane from './Pane';
+import {
+  InputGroup,
+  InputGroupText,
+  InputGroupAddon,
+  FormInput,
+  Button,
+  Form,
+} from "shards-react";
+function Chat({ userID, userName, videoID, sendMessageFunc, messageList }) {
 
-import Form from './Form'
-import Pane from './Pane'
-const skt_endpoint = 'ws://localhost:5678/ws';
-var socket;
-var userToken = {}
-var isLoaded = false;
+  const [messageText, setMessageText] = useState('');
+  const bottom = createRef();
 
-function Chat({ videoID }) {
+  const scrollToBottom = () => {
+    bottom.current.scrollIntoView({ behavior: "smooth" });
+  };
 
-  var username = "";
+  useEffect(scrollToBottom, [messageList]);
 
-  // { msgText: "Hi usrnm!", userName: "usrnm2", userID: 91616, timeStamp: "apples", videoID: "ax45fpj9" }
-  const [messages, setMessages] = useState([])
-  const [closed, toggleClosed] = useState(true);
-  const [loaded, toggleLoaded] = useState(false);
-  const [currentMessage, setCurrentMessage] = useState();
-  const fieldRef = useRef(null);
-
-  // useEffect(() => {
-  //   if (fieldRef.current != null) {
-  //     window.scrollTo(0, fieldRef.current.offsetTop)
-  //   }
-  // }, [messages])
-
-  const addNewMessage = (msg) => {
-    console.log("adding message")
-    // console.log(`first: ${Math.max(messages.length - 20, 0)}  second: ${messages.length}...`)
-    console.log([...messages.slice(Math.max(messages.length - 20, 0), messages.length), msg])
-    setMessages([...messages.slice(Math.max(messages.length - 20, 0), messages.length), msg]);
-    console.log(messages);
-  }
-
-  const pushMessage = (msg) => {
-    console.log(socket);
-    console.log(msg);
-    socket.send(JSON.stringify(msg));
-  }
-
-  const submitUsername = (inputUserName) => {
-    username = inputUserName;
-
-    userToken = { userName: inputUserName, videoID: videoID, userID: 0 }
-    socket = new WebSocket(skt_endpoint);
-
-    socket.onopen = (_) => {
-      console.log(userToken);
-      console.log(socket)
-      socket.send(JSON.stringify(userToken))
-    }
-
-    socket.onclose = (_) => {
-      toggleClosed(true);
-    }
-    socket.onmessage = (ev) => {
-      console.log("DATA")
-      console.log(ev.data)
-      console.log(loaded)
-      if (!isLoaded) {
-        userToken.userID = JSON.parse(ev.data).userID;
-        (() => {
-          isLoaded = true;
-          toggleLoaded(true);
-        })()
-      } else {
-        addNewMessage(JSON.parse(ev.data))
-      }
-    }
-  }
-
-  if (!closed) {
-    return (
-      <div>
-        Service unavailable. Restart the extension later...
-      </div>
-    )
-  } else if (loaded) {
-    return (
-      <div>
-        {/* styles="overflow:scroll" */}
-        <div >
-          {
-
-            messages.map((msg) => {
-              return (
-                <Pane
-                  own={msg.userID == userToken.userID}
-                  msg={msg.msgText}
-                  username={msg.userName}
-                  color={0}
-                />
-              );
-            })
-          }
-          <div className="field" ref={fieldRef} />
-        </div>
-        <FormInput placeholder="Enter nickname" onChange={(e) => { setCurrentMessage(e.target.value) }} />
-        <Button theme="success" onClick={() => {
-
-          const msg_to_send = {
-            msgText: currentMessage,
-            userName: username,
-            userID: userToken.userID,
-            timeStamp: "hello",
-            videoID: userToken.videoID
-          }
-            (() => {
-              pushMessage(msg_to_send);
-              setCurrentMessage("");
-            })();
-        }}>Continue</Button>
-      </div>
-    )
-  } else {
-    return (
-      <Form videoID={videoID} submitUsername={submitUsername} isLoaded={loaded} />
-    )
-  }
+  return (
+    <div>
+      <main className="messagesWindow">
+        {
+          messageList.map((message, index) => {
+            return (<Pane
+              messageText={message.msgText}
+              username={message.userName}
+              own={userID === message.userID}
+              timestamp={message.timeStamp}
+              key={index}
+            />);
+          })
+        }
+        <div ref={bottom} />
+      </main>
+      <Form onSubmit={(e) => {
+        e.preventDefault();
+        if (messageText.length === 0) return;
+        sendMessageFunc(messageText);
+        setMessageText("");
+      }}>
+        <InputGroup >
+          <InputGroupAddon type="prepend">
+            <InputGroupText>
+              {videoID}/
+            </InputGroupText>
+          </InputGroupAddon>
+          <FormInput placeholder="type a message" value={messageText} onChange={(e) => { setMessageText(e.target.value) }} />
+          <InputGroupAddon type="append">
+            <Button theme="secondary">Send</Button>
+          </InputGroupAddon>
+        </InputGroup>
+      </Form>
+    </div>
+  )
 }
 
 export default Chat
-

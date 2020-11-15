@@ -70,11 +70,20 @@ func (this *PubSubMgr) deleteUser(userID uint32) error {
 
 func (this *PubSubMgr) BroadcastMessage(incomingMessage *Message) error {
 	var videoID = incomingMessage.VideoID
-	var err error
+	var err error; 
+	var senderID = incomingMessage.UserID; 
+
 	incomingMessage.UserID = 0
 	for k := range this.videos[videoID] {
 		println("Sending a message to: " + k.userName + ".")
+		if (k.userID == senderID) {
+			incomingMessage.UserID = senderID; 
+		}
 		err = this.broadcastMessageToSock(incomingMessage, k.sockConn)
+		
+		if (k.userID == senderID) {
+			incomingMessage.UserID = 0; 
+		}
 	}
 	return err
 }

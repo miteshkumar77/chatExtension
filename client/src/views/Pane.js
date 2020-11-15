@@ -1,18 +1,20 @@
 import React from 'react'
-import { Card, CardBody, CardTitle, CardSubtitle, Badge } from "shards-react";
+import { Card, CardBody, Badge, Alert } from "shards-react";
 import "bootstrap/dist/css/bootstrap.min.css";
 import "shards-ui/dist/css/shards.min.css"
 
-const colors = ["secondary", "success", "info", "warning", "danger", "light", "dark"];
+const themes = ["secondary", "success", "info", "warning", "danger", "light", "dark"];
 // own ? "text-align:right" : "text-align:left"
-function Pane({ own, msg, username, color }) {
+function Pane({ own, messageText, username, timestamp }) {
   return (
-    <Card>
-      <CardBody>
-        <Badge color={colors[color]}>{username}</Badge>
-        {"  "}{msg}
-      </CardBody>
-    </Card>
+    // <Card>
+    //   <CardBody>
+    <Alert theme={themes[own ? 0 : 1]}>
+      <Badge theme="light" style={{ marginRight: '10px' }}>{username}</Badge>
+      {"       "}{messageText}
+    </Alert>
+    //   </CardBody>
+    // </Card>
   );
 }
 
