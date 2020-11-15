@@ -1,5 +1,5 @@
 build:
-	go build -o bin/main main.go safeQueue.go types.go chatNode.go
+	go build -o bin/main ./src/main.go ./src/safeQueue.go ./src/types.go ./src/chatNode.go
 
 run:
-	go run main.go safeQueue.go types.go chatNode.go
+	go run ./src/main.go ./src/safeQueue.go ./src/types.go ./src/chatNode.go

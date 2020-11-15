@@ -1,2 +1,4 @@
 extension/
 .vscode
+bin/
+serverfake/
