@@ -15,10 +15,14 @@ var upgrader = websocket.Upgrader{
 	WriteBufferSize: 1024,
 }
 
-func reader(ws *websocket.Conn, jobs *SafeQueue) {
+func reader(ws *websocket.Conn, jobs *SafeQueue, rateLimiter *RateLimiter) {
 	for {
 		var m Message
-
+		if !rateLimiter.add(m.UserID) {
+			rateLimiter.timeout(m.UserID)
+			log.Println("Tried to send messages too fast, timing out user with ID: " + fmt.Sprint(m.UserID) + "...")
+			return
+		}
 		err := ws.ReadJSON(&m)
 		if err != nil {
 			log.Println(err)
@@ -29,10 +33,11 @@ func reader(ws *websocket.Conn, jobs *SafeQueue) {
 	}
 }
 
-func process(jobs *SafeQueue, mgr *PubSubMgr) {
+func process(jobs *SafeQueue, mgr *PubSubMgr, rateLimiter *RateLimiter) {
 	for true {
 		var item *Message = jobs.Pop()
 		err := mgr.BroadcastMessage(item)
+		rateLimiter.resolve(item.UserID)
 		if err != nil {
 			println("Error broadcasting message!")
 			log.Fatal(err)
@@ -40,7 +45,8 @@ func process(jobs *SafeQueue, mgr *PubSubMgr) {
 	}
 }
 
-func wsEndpoint(w http.ResponseWriter, r *http.Request, jobs *SafeQueue, mgr *PubSubMgr) {
+func wsEndpoint(w http.ResponseWriter, r *http.Request,
+	jobs *SafeQueue, mgr *PubSubMgr, rateLimiter *RateLimiter) {
 	upgrader.CheckOrigin = func(r *http.Request) bool { return true }
 	ws, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
@@ -66,7 +72,7 @@ func wsEndpoint(w http.ResponseWriter, r *http.Request, jobs *SafeQueue, mgr *Pu
 		log.Fatal(err)
 	}
 
-	reader(ws, jobs)
+	reader(ws, jobs, rateLimiter)
 }
 
 func homeHandler(w http.ResponseWriter, r *http.Request) {
@@ -77,7 +83,7 @@ func main() {
 
 	var sPORT int = 5678
 	var sThreads int = 3
-
+	var rateLimit uint16 = 1
 	var variable, exists = os.LookupEnv("PORT")
 	if exists {
 		sPORT, _ = strconv.Atoi(variable)
@@ -88,17 +94,24 @@ func main() {
 		sThreads, _ = strconv.Atoi(variable)
 	}
 
+	variable, exists = os.LookupEnv("RATELIMIT")
+	if exists {
+		tmp, _ := strconv.ParseUint(variable, 16, 16)
+		rateLimit = uint16(tmp)
+	}
 	var jobs SafeQueue
+	var rateLimiter RateLimiter
 	jobs.Init()
-	var mgr PubSubMgr = PubSubMgr{make(map[string]map[*user]bool), make(map[uint32]*user)}
+	rateLimiter.Init(rateLimit)
+	var mgr PubSubMgr = PubSubMgr{make(map[string]map[*user]bool), make(map[uidType]*user)}
 
 	for i := 0; i < sThreads; i++ {
-		go process(&jobs, &mgr)
+		go process(&jobs, &mgr, &rateLimiter)
 	}
 
 	http.HandleFunc("/", homeHandler)
 	http.HandleFunc("/ws",
-		func(w http.ResponseWriter, r *http.Request) { wsEndpoint(w, r, &jobs, &mgr) })
+		func(w http.ResponseWriter, r *http.Request) { wsEndpoint(w, r, &jobs, &mgr, &rateLimiter) })
 
 	var portStr string = ":" + strconv.Itoa(sPORT)
 	log.Fatal(http.ListenAndServe(portStr, nil))
