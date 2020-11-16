@@ -9,7 +9,7 @@ import (
 
 type user struct {
 	userName string
-	userID   uint32
+	userID   uidType
 	videoID  string
 	sockConn *websocket.Conn
 }
@@ -17,19 +17,19 @@ type user struct {
 // PubSubMgr : Publish Subscribe Manager
 type PubSubMgr struct {
 	videos map[string]map[*user]bool // map of video IDs to collections of user pointers
-	users  map[uint32]*user          // map of user IDs to user pointers
+	users  map[uidType]*user         // map of user IDs to user pointers
 }
 
-func (this *PubSubMgr) Connect(userName string, videoID string, sockConn *websocket.Conn) uint32 {
+func (this *PubSubMgr) Connect(userName string, videoID string, sockConn *websocket.Conn) uidType {
 	println("New User: " + userName + " attempting to connect to video room: " + videoID + "...")
-	var newUID uint32 = this.createNewUser(userName, videoID, sockConn)
+	var newUID uidType = this.createNewUser(userName, videoID, sockConn)
 	println("New User: " + userName + " connected with UID: " + fmt.Sprint(newUID) + " to video room: " + videoID + ".")
 	println("Total " + fmt.Sprint(len(this.users)) + " open sockets, and " + fmt.Sprint(len(this.videos)) + " active rooms.")
 
 	return newUID
 }
 
-func (this *PubSubMgr) Disconnect(userID uint32) {
+func (this *PubSubMgr) Disconnect(userID uidType) {
 	println("User with UID: " + fmt.Sprint(userID) + " attempting to disconnect...")
 	this.deleteUser(userID)
 	println("User with UID: " + fmt.Sprint(userID) + " disconnected.")
@@ -44,9 +44,9 @@ func (this *PubSubMgr) deleteVideoRoom(videoID string) {
 	delete(this.videos, videoID)
 }
 
-func (this *PubSubMgr) createNewUser(userName string, videoID string, sockConn *websocket.Conn) uint32 {
+func (this *PubSubMgr) createNewUser(userName string, videoID string, sockConn *websocket.Conn) uidType {
 	var newUserPtr *user = &user{userName: userName, userID: 0, videoID: videoID, sockConn: sockConn}
-	newUserPtr.userID = *(*uint32)(unsafe.Pointer(newUserPtr))
+	newUserPtr.userID = *(*uidType)(unsafe.Pointer(newUserPtr))
 	this.users[newUserPtr.userID] = newUserPtr
 	if _, exists := this.videos[newUserPtr.videoID]; !exists {
 		this.createNewVideoRoom(newUserPtr.videoID)
@@ -55,7 +55,7 @@ func (this *PubSubMgr) createNewUser(userName string, videoID string, sockConn *
 	return newUserPtr.userID
 }
 
-func (this *PubSubMgr) deleteUser(userID uint32) error {
+func (this *PubSubMgr) deleteUser(userID uidType) error {
 	var userPtr = this.users[userID]
 	var videoID = userPtr.videoID
 	delete(this.videos[videoID], userPtr)
@@ -70,19 +70,19 @@ func (this *PubSubMgr) deleteUser(userID uint32) error {
 
 func (this *PubSubMgr) BroadcastMessage(incomingMessage *Message) error {
 	var videoID = incomingMessage.VideoID
-	var err error; 
-	var senderID = incomingMessage.UserID; 
+	var err error
+	var senderID = incomingMessage.UserID
 
 	incomingMessage.UserID = 0
 	for k := range this.videos[videoID] {
 		println("Sending a message to: " + k.userName + ".")
-		if (k.userID == senderID) {
-			incomingMessage.UserID = senderID; 
+		if k.userID == senderID {
+			incomingMessage.UserID = senderID
 		}
 		err = this.broadcastMessageToSock(incomingMessage, k.sockConn)
-		
-		if (k.userID == senderID) {
-			incomingMessage.UserID = 0; 
+
+		if k.userID == senderID {
+			incomingMessage.UserID = 0
 		}
 	}
 	return err
