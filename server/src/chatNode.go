@@ -14,7 +14,7 @@ type user struct {
 	sockConn *websocket.Conn
 }
 
-// PubSubMgr : Publish Subscribe Manager
+// PubSubMgr is an object that manages user publishes and subscribes
 type PubSubMgr struct {
 	videos map[string]map[*user]bool // map of video IDs to collections of user pointers
 	users  map[uidType]*user         // map of user IDs to user pointers

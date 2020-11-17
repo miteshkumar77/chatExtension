@@ -1,6 +1,6 @@
 package main
 
-// RateLimiter rate limit helper api
+// RateLimiter rate limit manager class
 type RateLimiter struct {
 	counter map[uidType]uint16
 	limit   uint16

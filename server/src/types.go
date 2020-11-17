@@ -11,12 +11,9 @@ type Message struct {
 	VideoID   string  `json:"videoID"`
 }
 
-/**
-TransactionToken: First message that client sends to server,
-	identifying the client's username, videoID.
-
-	server sends back the same message with a generated UserID
-*/
+// TransactionToken: First message that client sends to server,
+// 	identifying the client's username, videoID.
+// 	server sends back the same message with a generated UserID
 type TransactionToken struct {
 	UserName string  `json:"userName"`
 	VideoID  string  `json:"videoID"`
