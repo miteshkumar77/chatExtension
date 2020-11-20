@@ -2,12 +2,18 @@ version: "3.8"
 
 services:
   lb:
-    build: ./reverseproxy
-  
+    image: revproxy:latest
+    depends_on:
+      - ws1
+      - rds
+    ports:
+      - 8080:8080
   ws1:
     image: wsapp:latest
     environment:
       - APPID=1
+    depends_on:
+      - rds
 
   rds:
     image: redis

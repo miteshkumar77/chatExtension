@@ -5,24 +5,26 @@ events {
 }
 
 http {
-  map $http_upgrade $connection_upgrade {
-    default upgrade;
-    ''close; 
-  }
-
-  upstream websocket {
-    server ws1:8080
-  }
-
   server {
-    listen ${NGINX_PORT}
+    listen ${NGINX_PORT};
 
-    location /wslb {
-      proxy_pass http://websocket;
+    server_name localhost;
+
+    location /ws {
+      proxy_set_header X-Forwarded-For $$PROXY_ADD_X_FW;
+      proxy_set_header Host $$PROXY_HOST;
+
+      proxy_pass http://ws-backend; 
+
       proxy_http_version 1.1; 
-      proxy_set_header Upgrade $http_upgrade;
-      proxy_set_header Connection $connection_upgrade;
-      proxy_set_header Host $host;
+      proxy_set_header Upgrade $$HTTP_UPGRADE;
+      proxy_set_header Connection "upgrade";
     }
+  }
+
+  upstream ws-backend {
+    ip_hash;
+
+    server ws1:8080;
   }
 }

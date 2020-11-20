@@ -11,7 +11,7 @@ import {
 import Chat from './Chat';
 import "bootstrap/dist/css/bootstrap.min.css";
 import "shards-ui/dist/css/shards.min.css"
-const url = 'ws://localhost:5678/ws'
+const url = 'ws://localhost:8080/ws'
 const isAlNum = (str) => {
   var code, i, len;
 
