@@ -1,0 +1,13 @@
+version: "3.8"
+
+services:
+  lb:
+    build: ./reverseproxy
+  
+  ws1:
+    image: wsapp:latest
+    environment:
+      - APPID=1
+
+  rds:
+    image: redis

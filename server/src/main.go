@@ -83,7 +83,7 @@ func main() {
 
 	var sPORT int = 5678
 	var sThreads int = 3
-	var rateLimit uint16 = 1
+	var sRateLimit uint16 = 1
 	var variable, exists = os.LookupEnv("PORT")
 	if exists {
 		sPORT, _ = strconv.Atoi(variable)
@@ -97,12 +97,12 @@ func main() {
 	variable, exists = os.LookupEnv("RATELIMIT")
 	if exists {
 		tmp, _ := strconv.ParseUint(variable, 16, 16)
-		rateLimit = uint16(tmp)
+		sRateLimit = uint16(tmp)
 	}
 	var jobs SafeQueue
 	var rateLimiter RateLimiter
 	jobs.Init()
-	rateLimiter.Init(rateLimit)
+	rateLimiter.Init(sRateLimit)
 	var mgr PubSubMgr = PubSubMgr{make(map[string]map[*user]bool), make(map[uidType]*user)}
 
 	for i := 0; i < sThreads; i++ {
@@ -112,6 +112,7 @@ func main() {
 	http.HandleFunc("/", homeHandler)
 	http.HandleFunc("/ws",
 		func(w http.ResponseWriter, r *http.Request) { wsEndpoint(w, r, &jobs, &mgr, &rateLimiter) })
+	print("Running on port: [" + fmt.Sprint(sPORT) + "]\nThreads: [" + fmt.Sprint(sThreads) + "]\nMessages at a time: [" + fmt.Sprint(sRateLimit) + "]\n")
 
 	var portStr string = ":" + strconv.Itoa(sPORT)
 	log.Fatal(http.ListenAndServe(portStr, nil))
