@@ -103,7 +103,7 @@ func main() {
 	var rateLimiter RateLimiter
 	jobs.Init()
 	rateLimiter.Init(rateLimit)
-	var mgr PubSubMgr = PubSubMgr{make(map[string]map[*user]bool), make(map[uidType]*user)}
+	var mgr PubSubMgr = PubSubMgr{make(map[string]map[*User]bool), make(map[uidType]*User)}
 
 	for i := 0; i < sThreads; i++ {
 		go process(&jobs, &mgr, &rateLimiter)
