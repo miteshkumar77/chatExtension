@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"unsafe"
 
+	"github.com/go-redis/redis/v8"
 	"github.com/gorilla/websocket"
 )
 
@@ -16,8 +17,10 @@ type user struct {
 
 // PubSubMgr is an object that manages user publishes and subscribes
 type PubSubMgr struct {
-	videos map[string]map[*user]bool // map of video IDs to collections of user pointers
-	users  map[uidType]*user         // map of user IDs to user pointers
+	videos   map[string]map[*user]bool // map of video IDs to collections of user pointers
+	users    map[uidType]*user         // map of user IDs to user pointers
+	receiver *redis.PubSub             // redis channel
+	lock     chan bool
 }
 
 func (this *PubSubMgr) Connect(userName string, videoID string, sockConn *websocket.Conn) uidType {
@@ -25,7 +28,6 @@ func (this *PubSubMgr) Connect(userName string, videoID string, sockConn *websoc
 	var newUID uidType = this.createNewUser(userName, videoID, sockConn)
 	println("New User: " + userName + " connected with UID: " + fmt.Sprint(newUID) + " to video room: " + videoID + ".")
 	println("Total " + fmt.Sprint(len(this.users)) + " open sockets, and " + fmt.Sprint(len(this.videos)) + " active rooms.")
-
 	return newUID
 }
 
@@ -45,6 +47,7 @@ func (this *PubSubMgr) deleteVideoRoom(videoID string) {
 }
 
 func (this *PubSubMgr) createNewUser(userName string, videoID string, sockConn *websocket.Conn) uidType {
+	this.lock <- true
 	var newUserPtr *user = &user{userName: userName, userID: 0, videoID: videoID, sockConn: sockConn}
 	newUserPtr.userID = *(*uidType)(unsafe.Pointer(newUserPtr))
 	this.users[newUserPtr.userID] = newUserPtr
@@ -52,10 +55,12 @@ func (this *PubSubMgr) createNewUser(userName string, videoID string, sockConn *
 		this.createNewVideoRoom(newUserPtr.videoID)
 	}
 	this.videos[newUserPtr.videoID][newUserPtr] = true
+	<-this.lock
 	return newUserPtr.userID
 }
 
 func (this *PubSubMgr) deleteUser(userID uidType) error {
+	this.lock <- true
 	var userPtr = this.users[userID]
 	var videoID = userPtr.videoID
 	delete(this.videos[videoID], userPtr)
@@ -65,10 +70,14 @@ func (this *PubSubMgr) deleteUser(userID uidType) error {
 	delete(this.users, userID)
 	err := userPtr.sockConn.Close()
 	userPtr = nil
+	<-this.lock
 	return err
 }
 
 func (this *PubSubMgr) BroadcastMessage(incomingMessage *Message) error {
+	this.lock <- true
+	<-this.lock
+
 	var videoID = incomingMessage.VideoID
 	var err error
 	var senderID = incomingMessage.UserID
