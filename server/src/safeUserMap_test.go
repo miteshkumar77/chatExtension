@@ -136,7 +136,7 @@ func TestCount(t *testing.T) {
 	}
 }
 
-func TestConcurrentWrites(t *testing.T) {
+func TestConcurrentUpdates(t *testing.T) {
 
 	const iterations = 1000
 	const goroutines = 6
@@ -184,7 +184,7 @@ func TestConcurrentDeletes(t *testing.T) {
 	wg.Add(goroutines)
 
 	var m SafeUserMap
-	m.Init(12)
+	m.Init(5)
 
 	for id := 0; id < additions; id++ {
 		m.Set(uidType(id), &User{strconv.Itoa(id), uidType(id), strconv.Itoa(id) + "vid", nil})

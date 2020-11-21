@@ -4,7 +4,6 @@ type SafeUserMap struct {
 	users      [](map[uidType]*User)
 	readLocks  [](chan bool)
 	writeLocks [](chan bool)
-	size       int
 }
 
 func (this *SafeUserMap) Init(shards uint32) {
@@ -106,14 +105,4 @@ func (this *SafeUserMap) Delete(userID uidType) {
 
 	<-*readLock
 	<-*writeLock
-}
-
-type SafeRoomMap struct {
-	users map[string]map[uidType]bool
-	locks [](chan bool)
-}
-
-func (this *SafeRoomMap) Init(shards uint32) {
-	this.users = make(map[string]map[uidType]bool)
-	this.locks = make([](chan bool), shards)
 }
