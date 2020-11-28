@@ -11,11 +11,11 @@ func (this *RateLimiter) Init(limit uint16) {
 	this.limit = limit
 }
 
-func (this *RateLimiter) resolve(userID uidType) {
+func (this *RateLimiter) Resolve(userID uidType) {
 	this.counter[userID]--
 }
 
-func (this *RateLimiter) add(userID uidType) bool {
+func (this *RateLimiter) Add(userID uidType) bool {
 	if this.counter[userID] > this.limit {
 		return false
 	}
@@ -23,6 +23,6 @@ func (this *RateLimiter) add(userID uidType) bool {
 	return true
 }
 
-func (this *RateLimiter) timeout(userID uidType) {
+func (this *RateLimiter) Timeout(userID uidType) {
 	delete(this.counter, userID)
 }

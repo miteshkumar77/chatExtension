@@ -1,4 +1,4 @@
-module github.com/miteshkumar77/chatExtension/tree/main/server
+module chatExtensionServer
 
 go 1.15
 

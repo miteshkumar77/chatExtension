@@ -18,8 +18,8 @@ var upgrader = websocket.Upgrader{
 func reader(ws *websocket.Conn, jobs *SafeQueue, rateLimiter *RateLimiter) {
 	for {
 		var m Message
-		if !rateLimiter.add(m.UserID) {
-			rateLimiter.timeout(m.UserID)
+		if !rateLimiter.Add(m.UserID) {
+			rateLimiter.Timeout(m.UserID)
 			log.Println("Tried to send messages too fast, timing out user with ID: " + fmt.Sprint(m.UserID) + "...")
 			return
 		}
@@ -37,7 +37,7 @@ func process(jobs *SafeQueue, mgr *PubSubMgr, rateLimiter *RateLimiter) {
 	for true {
 		var item *Message = jobs.Pop()
 		err := mgr.BroadcastMessage(item)
-		rateLimiter.resolve(item.UserID)
+		rateLimiter.Resolve(item.UserID)
 		if err != nil {
 			println("Error broadcasting message!")
 			log.Fatal(err)
