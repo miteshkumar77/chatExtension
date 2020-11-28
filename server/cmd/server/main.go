@@ -1,6 +1,8 @@
 package main
 
 import (
+	"chatExtensionServer/internal/concurrency/concurrentroomtable"
+	"chatExtensionServer/internal/concurrency/concurrentusertable"
 	"chatExtensionServer/internal/types"
 	"fmt"
 	"log"
@@ -104,7 +106,7 @@ func main() {
 	var rateLimiter RateLimiter
 	jobs.Init()
 	rateLimiter.Init(rateLimit)
-	var mgr PubSubMgr = PubSubMgr{make(map[string]map[*types.User]bool), make(map[types.UIDType]*types.User)}
+	var mgr PubSubMgr = PubSubMgr{concurrentroomtable.CreateNewRoomTable(), concurrentusertable.CreateNewUserTable()}
 
 	for i := 0; i < sThreads; i++ {
 		go process(&jobs, &mgr, &rateLimiter)
