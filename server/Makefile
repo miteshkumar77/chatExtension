@@ -1,11 +1,9 @@
-build:
-	go build -o bin/main ./src/main.go ./src/safeQueue.go ./src/types.go ./src/chatNode.go ./src/rateLimiter.go
+SOURCES = "./cmd/server/"
 
+build:
+	go build -o bin/main ${SOURCES}
 run:
-	go run ./src/main.go ./src/safeQueue.go ./src/types.go ./src/chatNode.go ./src/rateLimiter.go
+	go run ${SOURCES}
 
 clean:
 	rm -rf bin/*
-
-install:
-	go install ./src/main.go ./src/safeQueue.go ./src/types.go ./src/chatNode.go ./src/rateLimiter.go

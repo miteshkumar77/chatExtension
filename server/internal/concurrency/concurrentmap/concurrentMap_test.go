@@ -1,4 +1,4 @@
-package main
+package concurrentmap
 
 import (
 	"encoding/binary"
