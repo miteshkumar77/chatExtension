@@ -1,6 +1,7 @@
 package main
 
 import (
+	"chatExtensionServer/internal/types"
 	"fmt"
 	"log"
 	"net/http"
@@ -17,7 +18,7 @@ var upgrader = websocket.Upgrader{
 
 func reader(ws *websocket.Conn, jobs *SafeQueue, rateLimiter *RateLimiter) {
 	for {
-		var m Message
+		var m types.Message
 		if !rateLimiter.Add(m.UserID) {
 			rateLimiter.Timeout(m.UserID)
 			log.Println("Tried to send messages too fast, timing out user with ID: " + fmt.Sprint(m.UserID) + "...")
@@ -35,7 +36,7 @@ func reader(ws *websocket.Conn, jobs *SafeQueue, rateLimiter *RateLimiter) {
 
 func process(jobs *SafeQueue, mgr *PubSubMgr, rateLimiter *RateLimiter) {
 	for true {
-		var item *Message = jobs.Pop()
+		var item *types.Message = jobs.Pop()
 		err := mgr.BroadcastMessage(item)
 		rateLimiter.Resolve(item.UserID)
 		if err != nil {
@@ -55,7 +56,7 @@ func wsEndpoint(w http.ResponseWriter, r *http.Request,
 
 	}
 
-	var t TransactionToken
+	var t types.TransactionToken
 	err = ws.ReadJSON(&t)
 	if err != nil {
 		println("Error decoding json body!")
@@ -103,7 +104,7 @@ func main() {
 	var rateLimiter RateLimiter
 	jobs.Init()
 	rateLimiter.Init(rateLimit)
-	var mgr PubSubMgr = PubSubMgr{make(map[string]map[*User]bool), make(map[uidType]*User)}
+	var mgr PubSubMgr = PubSubMgr{make(map[string]map[*types.User]bool), make(map[types.UIDType]*types.User)}
 
 	for i := 0; i < sThreads; i++ {
 		go process(&jobs, &mgr, &rateLimiter)

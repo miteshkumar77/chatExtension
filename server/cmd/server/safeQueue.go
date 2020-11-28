@@ -1,6 +1,9 @@
 package main
 
-import "container/list"
+import (
+	"chatExtensionServer/internal/types"
+	"container/list"
+)
 
 type SafeQueue struct {
 	queue     *list.List
@@ -15,16 +18,16 @@ func (this *SafeQueue) Init() {
 	this.writeLock = make(chan bool, 1)
 }
 
-func (this *SafeQueue) Pop() *Message {
+func (this *SafeQueue) Pop() *types.Message {
 	this.readLock <- true
-	var ret *Message = this.queue.Remove(this.queue.Back()).(*Message)
+	var ret *types.Message = this.queue.Remove(this.queue.Back()).(*types.Message)
 	if this.queue.Len() > 0 {
 		<-this.readLock
 	}
 	return ret
 }
 
-func (this *SafeQueue) Push(item *Message) {
+func (this *SafeQueue) Push(item *types.Message) {
 	this.writeLock <- true
 	this.queue.PushBack(item)
 	<-this.writeLock
