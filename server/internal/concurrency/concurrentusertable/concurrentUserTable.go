@@ -1,4 +1,4 @@
-package concurrentmap
+package concurrentusertable
 
 import (
 	"chatExtensionServer/internal/types"

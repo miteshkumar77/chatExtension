@@ -1,4 +1,4 @@
-package concurrentmap
+package concurrentroomtable
 
 import (
 	"chatExtensionServer/internal/types"
