@@ -1,6 +1,8 @@
 package main
 
 import (
+	"chatExtensionServer/internal/concurrency/concurrentroomtable"
+	"chatExtensionServer/internal/concurrency/concurrentusertable"
 	"chatExtensionServer/internal/types"
 	"fmt"
 	"log"
@@ -19,14 +21,15 @@ var upgrader = websocket.Upgrader{
 func reader(ws *websocket.Conn, jobs *SafeQueue, rateLimiter *RateLimiter) {
 	for {
 		var m types.Message
-		if !rateLimiter.Add(m.UserID) {
-			rateLimiter.Timeout(m.UserID)
-			log.Println("Tried to send messages too fast, timing out user with ID: " + fmt.Sprint(m.UserID) + "...")
-			return
-		}
+
 		err := ws.ReadJSON(&m)
 		if err != nil {
 			log.Println(err)
+			return
+		}
+
+		if rateLimiter.Add(m.UserID) {
+			log.Println("Tried to send messages too fast, timing out user with ID: " + fmt.Sprint(m.UserID) + "...")
 			return
 		}
 
@@ -104,7 +107,7 @@ func main() {
 	var rateLimiter RateLimiter
 	jobs.Init()
 	rateLimiter.Init(rateLimit)
-	var mgr PubSubMgr = PubSubMgr{make(map[string]map[*types.User]bool), make(map[types.UIDType]*types.User)}
+	var mgr PubSubMgr = PubSubMgr{concurrentroomtable.CreateNewRoomTable(), concurrentusertable.CreateNewUserTable()}
 
 	for i := 0; i < sThreads; i++ {
 		go process(&jobs, &mgr, &rateLimiter)

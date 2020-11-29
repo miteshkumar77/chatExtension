@@ -2,21 +2,6 @@ package concurrentmap
 
 import "sync"
 
-// SizeType used for size properties
-type SizeType = uint64
-
-// IndexType used for indexing the map
-type IndexType = uint64
-
-// RatioType used for fractional properties
-type RatioType = float32
-
-// KeyType used for the key's type
-type KeyType = int
-
-// ValueType used for the value's type
-type ValueType = int
-
 ///---------------------------------------------------------------------------------------------------------
 // hashElement class BEGIN
 
@@ -256,6 +241,36 @@ func (table *ConcurrentHashMap) CallBackAction(key KeyType, cb func(ValueType)) 
 
 }
 
+// CallBackActionAndDelete calls a callback function and then deletes the value from the table
+func (table *ConcurrentHashMap) CallBackActionAndDelete(key KeyType, cb func(ValueType)) {
+	hashValue := table.mhash(key)
+	shard := table.getShard(hashValue)
+
+	table.RWLocks[shard].Lock()
+	exists, value := table.shards[shard].shardGetVal(key, hashValue)
+	if exists {
+		cb(value)
+	}
+	table.shards[shard].shardErase(key, hashValue)
+	table.RWLocks[shard].Unlock()
+}
+
+// CallBackUpdateInsertOrDelete calls a callback function and then updates, inserts, or deletes
+func (table *ConcurrentHashMap) CallBackUpdateInsertOrDelete(key KeyType, cb func(bool, ValueType) (bool, ValueType)) {
+	hashValue := table.mhash(key)
+	shard := table.getShard(hashValue)
+
+	table.RWLocks[shard].Lock()
+	exists, value := table.shards[shard].shardGetVal(key, hashValue)
+	shouldErase, newValue := cb(exists, value)
+
+	if shouldErase == true {
+		table.shards[shard].shardErase(key, hashValue)
+	} else {
+		table.shards[shard].shardSet(key, hashValue, newValue)
+	}
+}
+
 // CallBackIterator calls a callback function cb for every element in the map
 // in no particular order
 func (table *ConcurrentHashMap) CallBackIterator(cb func(KeyType, ValueType)) {
@@ -268,6 +283,41 @@ func (table *ConcurrentHashMap) CallBackIterator(cb func(KeyType, ValueType)) {
 
 		table.RWLocks[shardIndex].RUnlock()
 	}
+}
+
+// CallBackUpdateOrDelete calls a callback function that allows update and conditional deletion of
+// an item
+func (table *ConcurrentHashMap) CallBackUpdateOrDelete(key KeyType, cb func(ValueType) (bool, ValueType)) {
+	hashValue := table.mhash(key)
+	shard := table.getShard(hashValue)
+
+	table.RWLocks[shard].Lock()
+
+	exists, value := table.shards[shard].shardGetVal(key, hashValue)
+	if exists {
+		shouldErase, newValue := cb(value)
+		if shouldErase {
+			table.shards[shard].shardErase(key, hashValue)
+		} else {
+			table.shards[shard].shardSet(key, hashValue, newValue)
+		}
+	}
+
+	table.RWLocks[shard].Unlock()
+}
+
+// CallBackUpdateOrInsert calls a callback function that updates the existing value or
+// sets a default value for a non-existing key
+func (table *ConcurrentHashMap) CallBackUpdateOrInsert(key KeyType, cb func(bool, ValueType) ValueType) {
+	hashValue := table.mhash(key)
+	shard := table.getShard(hashValue)
+
+	table.RWLocks[shard].Lock()
+
+	exists, value := table.shards[shard].shardGetVal(key, hashValue)
+	cb(exists, value)
+
+	table.RWLocks[shard].Unlock()
 }
 
 // Insert inserts a key value pair into the collection if it does not exist
