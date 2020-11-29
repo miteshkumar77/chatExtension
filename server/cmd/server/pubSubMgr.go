@@ -96,6 +96,8 @@ func (mgr *PubSubMgr) BroadcastMessage(incomingMessage *types.Message) error {
 			})
 		}
 	})
+
+	incomingMessage.UserID = senderID
 	return err
 }
 

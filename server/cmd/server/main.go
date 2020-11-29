@@ -21,14 +21,15 @@ var upgrader = websocket.Upgrader{
 func reader(ws *websocket.Conn, jobs *SafeQueue, rateLimiter *RateLimiter) {
 	for {
 		var m types.Message
-		if !rateLimiter.Add(m.UserID) {
-			rateLimiter.Timeout(m.UserID)
-			log.Println("Tried to send messages too fast, timing out user with ID: " + fmt.Sprint(m.UserID) + "...")
-			return
-		}
+
 		err := ws.ReadJSON(&m)
 		if err != nil {
 			log.Println(err)
+			return
+		}
+
+		if rateLimiter.Add(m.UserID) {
+			log.Println("Tried to send messages too fast, timing out user with ID: " + fmt.Sprint(m.UserID) + "...")
 			return
 		}
 

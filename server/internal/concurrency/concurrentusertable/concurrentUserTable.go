@@ -1,41 +1,6 @@
 package concurrentusertable
 
-import (
-	"chatExtensionServer/internal/types"
-	"encoding/binary"
-	"hash/fnv"
-	"sync"
-)
-
-// SizeType used for size properties
-type SizeType = uint64
-
-// IndexType used for indexing the map
-type IndexType = uint64
-
-// RatioType used for fractional properties
-type RatioType = float32
-
-// KeyType used for the key's type
-type KeyType = types.UIDType
-
-// ValueType used for the value's type
-type ValueType = types.User
-
-// CreateNewUserTable creates a new room table
-func CreateNewUserTable() ConcurrentHashMap {
-	hs := func(key KeyType) IndexType {
-
-		b := make([]byte, 8)
-		binary.LittleEndian.PutUint64(b, uint64(key))
-		h := fnv.New64()
-		h.Write([]byte(b))
-		return IndexType(h.Sum64())
-	}
-
-	numShards := uint64(100)
-	return CreateNewConcurrentHashMap(0.7, 100, hs, numShards)
-}
+import "sync"
 
 ///---------------------------------------------------------------------------------------------------------
 // hashElement class BEGIN
@@ -290,6 +255,22 @@ func (table *ConcurrentHashMap) CallBackActionAndDelete(key KeyType, cb func(Val
 	table.RWLocks[shard].Unlock()
 }
 
+// CallBackUpdateInsertOrDelete calls a callback function and then updates, inserts, or deletes
+func (table *ConcurrentHashMap) CallBackUpdateInsertOrDelete(key KeyType, cb func(bool, ValueType) (bool, ValueType)) {
+	hashValue := table.mhash(key)
+	shard := table.getShard(hashValue)
+
+	table.RWLocks[shard].Lock()
+	exists, value := table.shards[shard].shardGetVal(key, hashValue)
+	shouldErase, newValue := cb(exists, value)
+
+	if shouldErase == true {
+		table.shards[shard].shardErase(key, hashValue)
+	} else {
+		table.shards[shard].shardSet(key, hashValue, newValue)
+	}
+}
+
 // CallBackIterator calls a callback function cb for every element in the map
 // in no particular order
 func (table *ConcurrentHashMap) CallBackIterator(cb func(KeyType, ValueType)) {
@@ -321,6 +302,20 @@ func (table *ConcurrentHashMap) CallBackUpdateOrDelete(key KeyType, cb func(Valu
 			table.shards[shard].shardSet(key, hashValue, newValue)
 		}
 	}
+
+	table.RWLocks[shard].Unlock()
+}
+
+// CallBackUpdateOrInsert calls a callback function that updates the existing value or
+// sets a default value for a non-existing key
+func (table *ConcurrentHashMap) CallBackUpdateOrInsert(key KeyType, cb func(bool, ValueType) ValueType) {
+	hashValue := table.mhash(key)
+	shard := table.getShard(hashValue)
+
+	table.RWLocks[shard].Lock()
+
+	exists, value := table.shards[shard].shardGetVal(key, hashValue)
+	cb(exists, value)
 
 	table.RWLocks[shard].Unlock()
 }
