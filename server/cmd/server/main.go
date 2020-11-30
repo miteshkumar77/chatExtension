@@ -1,8 +1,11 @@
 package main
 
 import (
+	"chatExtensionServer/internal/concurrency/concurrentqueue"
 	"chatExtensionServer/internal/concurrency/concurrentroomtable"
 	"chatExtensionServer/internal/concurrency/concurrentusertable"
+	"chatExtensionServer/internal/manager"
+	"chatExtensionServer/internal/ratelimiting"
 	"chatExtensionServer/internal/types"
 	"fmt"
 	"log"
@@ -18,7 +21,7 @@ var upgrader = websocket.Upgrader{
 	WriteBufferSize: 1024,
 }
 
-func reader(ws *websocket.Conn, jobs *SafeQueue, rateLimiter *RateLimiter) {
+func reader(ws *websocket.Conn, jobs *concurrentqueue.SafeQueue, rateLimiter *ratelimiting.RateLimiter) {
 	for {
 		var m types.Message
 
@@ -37,7 +40,7 @@ func reader(ws *websocket.Conn, jobs *SafeQueue, rateLimiter *RateLimiter) {
 	}
 }
 
-func process(jobs *SafeQueue, mgr *PubSubMgr, rateLimiter *RateLimiter) {
+func process(jobs *concurrentqueue.SafeQueue, mgr *manager.PubSubMgr, rateLimiter *ratelimiting.RateLimiter) {
 	for true {
 		var item *types.Message = jobs.Pop()
 		err := mgr.BroadcastMessage(item)
@@ -50,7 +53,7 @@ func process(jobs *SafeQueue, mgr *PubSubMgr, rateLimiter *RateLimiter) {
 }
 
 func wsEndpoint(w http.ResponseWriter, r *http.Request,
-	jobs *SafeQueue, mgr *PubSubMgr, rateLimiter *RateLimiter) {
+	jobs *concurrentqueue.SafeQueue, mgr *manager.PubSubMgr, rateLimiter *ratelimiting.RateLimiter) {
 	upgrader.CheckOrigin = func(r *http.Request) bool { return true }
 	ws, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
@@ -103,11 +106,11 @@ func main() {
 		tmp, _ := strconv.ParseUint(variable, 16, 16)
 		rateLimit = uint16(tmp)
 	}
-	var jobs SafeQueue
-	var rateLimiter RateLimiter
+	var jobs concurrentqueue.SafeQueue
+	var rateLimiter ratelimiting.RateLimiter
 	jobs.Init()
 	rateLimiter.Init(rateLimit)
-	var mgr PubSubMgr = PubSubMgr{concurrentroomtable.CreateNewRoomTable(), concurrentusertable.CreateNewUserTable()}
+	var mgr manager.PubSubMgr = manager.PubSubMgr{Videos: concurrentroomtable.CreateNewRoomTable(), Users: concurrentusertable.CreateNewUserTable()}
 
 	for i := 0; i < sThreads; i++ {
 		go process(&jobs, &mgr, &rateLimiter)

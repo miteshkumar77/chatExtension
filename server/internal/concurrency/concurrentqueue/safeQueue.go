@@ -1,4 +1,4 @@
-package main
+package concurrentqueue
 
 import (
 	"chatExtensionServer/internal/types"
