@@ -1,4 +1,4 @@
-package concurrentmap
+package concurrentroomtable
 
 import "sync"
 
@@ -253,22 +253,6 @@ func (table *ConcurrentHashMap) CallBackActionAndDelete(key KeyType, cb func(Val
 	}
 	table.shards[shard].shardErase(key, hashValue)
 	table.RWLocks[shard].Unlock()
-}
-
-// CallBackUpdateInsertOrDelete calls a callback function and then updates, inserts, or deletes
-func (table *ConcurrentHashMap) CallBackUpdateInsertOrDelete(key KeyType, cb func(bool, ValueType) (bool, ValueType)) {
-	hashValue := table.mhash(key)
-	shard := table.getShard(hashValue)
-
-	table.RWLocks[shard].Lock()
-	exists, value := table.shards[shard].shardGetVal(key, hashValue)
-	shouldErase, newValue := cb(exists, value)
-
-	if shouldErase == true {
-		table.shards[shard].shardErase(key, hashValue)
-	} else {
-		table.shards[shard].shardSet(key, hashValue, newValue)
-	}
 }
 
 // CallBackIterator calls a callback function cb for every element in the map

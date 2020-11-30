@@ -1,6 +1,8 @@
-package concurrentmap
+package concurrentratelimittable
 
-import "sync"
+import (
+	"sync"
+)
 
 ///---------------------------------------------------------------------------------------------------------
 // hashElement class BEGIN
@@ -269,6 +271,7 @@ func (table *ConcurrentHashMap) CallBackUpdateInsertOrDelete(key KeyType, cb fun
 	} else {
 		table.shards[shard].shardSet(key, hashValue, newValue)
 	}
+	table.RWLocks[shard].Unlock()
 }
 
 // CallBackIterator calls a callback function cb for every element in the map

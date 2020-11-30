@@ -1,12 +1,15 @@
-package main
+package types
 
-type uidType = int64
+import "github.com/gorilla/websocket"
+
+// UIDType is the underlying type that the user id uses
+type UIDType = int64
 
 // Message is a variable type
 type Message struct {
 	MsgText   string  `json:"msgText"`
 	UserName  string  `json:"userName"`
-	UserID    uidType `json:"userID"`
+	UserID    UIDType `json:"userID"`
 	TimeStamp string  `json:"timeStamp"`
 	VideoID   string  `json:"videoID"`
 }
@@ -17,5 +20,13 @@ type Message struct {
 type TransactionToken struct {
 	UserName string  `json:"userName"`
 	VideoID  string  `json:"videoID"`
-	UserID   uidType `json:"userID"`
+	UserID   UIDType `json:"userID"`
+}
+
+// User is the object that represents a connected user
+type User struct {
+	UserName string
+	UserID   UIDType
+	VideoID  string
+	SockConn *websocket.Conn
 }
