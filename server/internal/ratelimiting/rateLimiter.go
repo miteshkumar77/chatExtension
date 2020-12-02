@@ -1,4 +1,4 @@
-package main
+package ratelimiting
 
 import (
 	"chatExtensionServer/internal/concurrency/concurrentratelimittable"
