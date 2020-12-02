@@ -2,8 +2,6 @@ package main
 
 import (
 	"chatExtensionServer/internal/concurrency/concurrentqueue"
-	"chatExtensionServer/internal/concurrency/concurrentroomtable"
-	"chatExtensionServer/internal/concurrency/concurrentusertable"
 	"chatExtensionServer/internal/manager"
 	"chatExtensionServer/internal/ratelimiting"
 	"chatExtensionServer/internal/types"
@@ -110,7 +108,7 @@ func main() {
 	var rateLimiter ratelimiting.RateLimiter
 	jobs.Init()
 	rateLimiter.Init(rateLimit)
-	var mgr manager.PubSubMgr = manager.PubSubMgr{Videos: concurrentroomtable.CreateNewRoomTable(), Users: concurrentusertable.CreateNewUserTable()}
+	mgr := manager.CreateNewPSMgr()
 
 	for i := 0; i < sThreads; i++ {
 		go process(&jobs, &mgr, &rateLimiter)

@@ -16,6 +16,18 @@ type PubSubMgr struct {
 	Users  concurrentusertable.ConcurrentHashMap
 }
 
+// CreateNewPSMgr creates and initializes a new PubSubMgr object
+func CreateNewPSMgr() PubSubMgr {
+	var manager PubSubMgr
+	manager.init()
+	return manager
+}
+
+func (mgr *PubSubMgr) init() {
+	mgr.Videos = concurrentroomtable.CreateNewRoomTable()
+	mgr.Users = concurrentusertable.CreateNewUserTable()
+}
+
 // Connect connects a user
 func (mgr *PubSubMgr) Connect(UserName string, videoID string, sockConn *websocket.Conn) types.UIDType {
 	println("New User: " + UserName + " attempting to connect to video room: " + videoID + "...")
