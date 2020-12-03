@@ -44,10 +44,10 @@ Now you can see on the console that we can open multiple tabs and the reverse pr
 ## How it works
 
 ### Concurrency
-We have implemented a concurrent blocking queue to create a worker pool and a concurrent read optimized hashmap to store current rooms, users, and =frequency data for rate limiting. The hashmap is implemented using sharding and `sync.RWMutex`. The queue is implemented by using go channels as locks. 
+We have implemented a concurrent blocking queue to create a worker pool and a concurrent read optimized hashmap to store current rooms, users, and frequency data for rate limiting. The hashmap is implemented using sharding and `sync.RWMutex`. The queue is implemented by using go channels as locks. 
 
 ### Redis pub/sub
-All `wsapp:latest` instances subscribe and publish to the same redis pub/sub channel. When an instance recieves a message from its websocket connection, it publishes the message to the common channel. Simultaneously, in another goroutine, the instance adds the messages to a `Jobs` concurrent queue. Multiple worker goroutines wait until the `Jobs` queue has a message in it, and then broadcast that message to all of the users connected to the particular room. In this way, all users in a particular room will recieve the message no matter what instance they are connected to, and we can scale to a much higher amount of websocket connections. 
+All `wsapp:latest` instances subscribe and publish to the same redis pub/sub channel. When an instance recieves a message from its websocket connection, it publishes the message to the common channel. Simultaneously, in another goroutine, the instance listens to the subscription and adds incoming messages to a `Jobs` concurrent queue. Multiple worker goroutines wait until the `Jobs` queue has a message in it, and then broadcast that message to all of the users connected to the particular room. In this way, all users in a particular room will recieve the message no matter what instance they are connected to, and we can scale to a much higher amount of websocket connections. 
 
 ### Rate limiting
 We use a concurrent hashmap in order to store how many messages are currently in the `Jobs` queue that haven't yet been processed. If this number reaches higher than a constant set threshold, the user's websocket is disconnected. This prevents someone from running a script to repeatedly send messages and put unnecessary load on the server.
