@@ -23,8 +23,9 @@ http {
   }
 
   upstream ws-backend {
-    ip_hash;
 
     server ws1:8080;
+    server ws2:8080;
+    server ws3:8080;
   }
 }

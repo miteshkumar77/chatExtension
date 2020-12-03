@@ -5,21 +5,25 @@ import (
 	"chatExtensionServer/internal/manager"
 	"chatExtensionServer/internal/ratelimiting"
 	"chatExtensionServer/internal/types"
+	"context"
 	"fmt"
 	"log"
 	"net/http"
 	"os"
 	"strconv"
 
+	"github.com/go-redis/redis/v8"
 	"github.com/gorilla/websocket"
 )
+
+var ctx = context.Background()
 
 var upgrader = websocket.Upgrader{
 	ReadBufferSize:  1024,
 	WriteBufferSize: 1024,
 }
 
-func reader(ws *websocket.Conn, jobs *concurrentqueue.SafeQueue, rateLimiter *ratelimiting.RateLimiter) {
+func reader(ws *websocket.Conn, jobs *concurrentqueue.SafeQueue, rateLimiter *ratelimiting.RateLimiter, rdb *redis.Client) {
 	for {
 		var m types.Message
 
@@ -34,7 +38,39 @@ func reader(ws *websocket.Conn, jobs *concurrentqueue.SafeQueue, rateLimiter *ra
 			return
 		}
 
-		jobs.Push(&m)
+		println("Publishing message to channel!")
+		// Post the incoming message to channel
+		binaryMessage, err := m.MarshalBinary()
+
+		if err != nil {
+			log.Fatalf("Error marshalling incoming message")
+		}
+
+		err = rdb.Publish(ctx, types.RedisChatChannel, binaryMessage).Err()
+		if err != nil {
+			log.Fatalf("Error publishing message: %v", err)
+		}
+	}
+}
+
+func redisReader(ps *redis.PubSub, jobs *concurrentqueue.SafeQueue) {
+
+	for true {
+		ch := ps.Channel()
+
+		for msg := range ch {
+
+			fmt.Println("Got a message: ")
+			fmt.Println(msg.Channel, msg.Payload)
+
+			var marshalledMessage types.Message
+			err := marshalledMessage.UnmarshalBinary([]byte(msg.Payload))
+
+			if err != nil {
+				log.Fatalf("%v", err)
+			}
+			jobs.Push(&marshalledMessage)
+		}
 	}
 }
 
@@ -51,7 +87,7 @@ func process(jobs *concurrentqueue.SafeQueue, mgr *manager.PubSubMgr, rateLimite
 }
 
 func wsEndpoint(w http.ResponseWriter, r *http.Request,
-	jobs *concurrentqueue.SafeQueue, mgr *manager.PubSubMgr, rateLimiter *ratelimiting.RateLimiter) {
+	jobs *concurrentqueue.SafeQueue, mgr *manager.PubSubMgr, rateLimiter *ratelimiting.RateLimiter, rdb *redis.Client, appID int) {
 	upgrader.CheckOrigin = func(r *http.Request) bool { return true }
 	ws, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
@@ -68,6 +104,9 @@ func wsEndpoint(w http.ResponseWriter, r *http.Request,
 	}
 
 	t.UserID = mgr.Connect(t.UserName, t.VideoID, ws)
+
+	println("User connected to room: [" + fmt.Sprint(appID) + "]")
+
 	defer mgr.Disconnect(t.UserID)
 
 	err = mgr.SendTokenToUser(&t)
@@ -77,7 +116,7 @@ func wsEndpoint(w http.ResponseWriter, r *http.Request,
 		log.Fatal(err)
 	}
 
-	reader(ws, jobs, rateLimiter)
+	reader(ws, jobs, rateLimiter, rdb)
 }
 
 func homeHandler(w http.ResponseWriter, r *http.Request) {
@@ -89,6 +128,8 @@ func main() {
 	var sPORT int = 5678
 	var sThreads int = 3
 	var sRateLimit uint16 = 1
+	var sAPPID int = 1
+
 	var variable, exists = os.LookupEnv("PORT")
 	if exists {
 		sPORT, _ = strconv.Atoi(variable)
@@ -104,11 +145,32 @@ func main() {
 		tmp, _ := strconv.ParseUint(variable, 16, 16)
 		sRateLimit = uint16(tmp)
 	}
+
+	variable, exists = os.LookupEnv("APPID")
+	if exists {
+		sAPPID, _ = strconv.Atoi(variable)
+	}
+
 	var jobs concurrentqueue.SafeQueue
 	var rateLimiter ratelimiting.RateLimiter
 	jobs.Init()
 	rateLimiter.Init(sRateLimit)
+	rdb := redis.NewClient(&redis.Options{
+		Addr:     "rds:6379",
+		Password: "mypassword",
+		DB:       0,
+	})
+
+	ps := rdb.Subscribe(ctx, types.RedisChatChannel)
+
+	_, err := ps.Receive(ctx)
+	if err != nil {
+		log.Fatalf("%v", err)
+	}
+
 	mgr := manager.CreateNewPSMgr()
+
+	go redisReader(ps, &jobs)
 
 	for i := 0; i < sThreads; i++ {
 		go process(&jobs, &mgr, &rateLimiter)
@@ -116,8 +178,10 @@ func main() {
 
 	http.HandleFunc("/", homeHandler)
 	http.HandleFunc("/ws",
-		func(w http.ResponseWriter, r *http.Request) { wsEndpoint(w, r, &jobs, &mgr, &rateLimiter) })
-	print("Running on port: [" + fmt.Sprint(sPORT) + "]\nThreads: [" + fmt.Sprint(sThreads) + "]\nMessages at a time: [" + fmt.Sprint(sRateLimit) + "]\n")
+		func(w http.ResponseWriter, r *http.Request) {
+			wsEndpoint(w, r, &jobs, &mgr, &rateLimiter, rdb, sAPPID)
+		})
+	print("Running on port: [" + fmt.Sprint(sPORT) + "]\nThreads: [" + fmt.Sprint(sThreads) + "]\nMessages at a time: [" + fmt.Sprint(sRateLimit) + "]\nAPPID: [" + fmt.Sprint(sAPPID) + "]\n")
 
 	var portStr string = ":" + strconv.Itoa(sPORT)
 	log.Fatal(http.ListenAndServe(portStr, nil))
