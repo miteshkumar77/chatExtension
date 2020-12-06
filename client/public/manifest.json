@@ -13,8 +13,8 @@
   },
   "icons": {
     "16": "favicon.ico",
-    "48": "logo192.png",
-    "128": "logo512.png"
+    "48": "logo48.png",
+    "128": "logo128.png"
   },
-  "content_security_policy": "script-src 'self' 'sha256-ZQr+9PmEzw3a1P4rmCepcl4B2hHH7c9W8k/hpDQ+AaU='; object-src 'self'"
+  "content_security_policy": "script-src 'self' 'sha256-a7QNwV+1osAC6bXKzzgKk6A6flFr6M/rAKUL6EiBwzM='; object-src 'self'"
 }
