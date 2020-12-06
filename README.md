@@ -16,7 +16,10 @@ You will need:
 3. Now try to launch the extension. You might see an empty white box. If you do, continue following the steps. 
 4. Navigate again to `chrome://extensions` and under the newly added extension, click "Errors". You should see something like the following:
   ```
-  Refused to execute inline script because it violates the following Content Security Policy directive: "script-src 'self' 'sha256-ZQr+9PmEzw3a1P4rmCepcl4B2hHH7c9W8k/hpDQ+AaU='". Either the 'unsafe-inline' keyword, a hash ('sha256-a7QNwV+1osAC6bXKzzgKk6A6flFr6M/rAKUL6EiBwzM='), or a nonce ('nonce-...') is required to enable inline execution.
+  Refused to execute inline script because it violates the following Content
+  Security Policy directive: "script-src 'self' 'sha256-ZQr+9PmEzw3a1P4rmCepcl4B2hHH7c9W8k/hpDQ+AaU='". 
+  Either the 'unsafe-inline' keyword, a hash ('sha256-a7QNwV+1osAC6bXKzzgKk6A6flFr6M/rAKUL6EiBwzM='), or 
+  a nonce ('nonce-...') is required to enable inline execution.
   ```
   Copy the new sha hash from it (e.g. `sha256-ZQr+9PmEzw3a1P4rmCepcl4B2hHH7c9W8k/hpDQ+AaU=`) and replace the old one at `content_security_policy` in `extensions/build/build/static/manifest.json`. 
 
@@ -24,11 +27,11 @@ You will need:
 
 ### Server:
 
-1. If you want to run the single server version, stay on the `main` branch, otherwise checkout the `distribution` branch. The rest of the steps are the same for both (Currently only `distribution` works. Need to do some refactoring to enable the single server model as well). 
-2. Issue `docker build -t wsapp:latest ./server/` to build an image of the server
-3. Issue `docker build -t revproxy:latest ./reverseproxy` to build an image of the Nginx reverse proxy
-4. Issue `docker-compose up` to launch a number of application instances, the Nginx reverse proxy, and the redis instance
-5. One can add more application instances by simply adding more 
+
+1. Issue `docker build -t wsapp:latest ./server/` to build an image of the server
+2. Issue `docker build -t revproxy:latest ./reverseproxy` to build an image of the Nginx reverse proxy
+3. Issue `docker-compose up` to launch a number of application instances, the Nginx reverse proxy, and the redis instance
+4. One can add more application instances by simply adding more 
 ```
 wsn:
     image: wsapp:latest
