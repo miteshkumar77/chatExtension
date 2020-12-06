@@ -45,7 +45,10 @@ to the `docker-compose.yaml` file. Here, the `APPID` environment variable is sim
 
 Now you can see on the console that we can open multiple tabs and the reverse proxy will randomly assign us to an upstream websocket server. If two tabs are on the same video, both will get all messages sent within the channel of that video. 
 
-<!-- ![Login](https://github.com/miteshkumar77/chatExtension/blob/[branch]/image.jpg?raw=true) -->
+
+![Sign in](https://github.com/miteshkumar77/chatExtension/blob/main/cap1.jpg?raw=true)
+
+![Chat](https://github.com/miteshkumar77/chatExtension/blob/main/cap2.png?raw=true)
 
 
 ## How it works
