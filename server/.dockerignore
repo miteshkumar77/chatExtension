@@ -1,0 +1,5 @@
+bin/
+pkg/
+
+*_test.go
+*_benchmark.go

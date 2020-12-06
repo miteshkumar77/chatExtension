@@ -1,6 +1,10 @@
 package types
 
-import "github.com/gorilla/websocket"
+import (
+	"encoding/json"
+
+	"github.com/gorilla/websocket"
+)
 
 // UIDType is the underlying type that the user id uses
 type UIDType = int64
@@ -12,6 +16,20 @@ type Message struct {
 	UserID    UIDType `json:"userID"`
 	TimeStamp string  `json:"timeStamp"`
 	VideoID   string  `json:"videoID"`
+}
+
+// MarshalBinary -
+func (msg *Message) MarshalBinary() ([]byte, error) {
+	return json.Marshal(msg)
+}
+
+// UnmarshalBinary -
+func (msg *Message) UnmarshalBinary(data []byte) error {
+	if err := json.Unmarshal(data, &msg); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // TransactionToken is the First message that client sends to server,
@@ -30,3 +48,6 @@ type User struct {
 	VideoID  string
 	SockConn *websocket.Conn
 }
+
+// RedisChatChannel is the redis channel that all nodes use to exchange messages
+const RedisChatChannel = "livechat"

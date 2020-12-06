@@ -1,0 +1,36 @@
+version: "3.8"
+
+services:
+  lb:
+    image: revproxy:latest
+    depends_on:
+      - ws1
+      - rds
+    ports:
+      - 8080:8080
+      
+  ws1:
+    image: wsapp:latest
+    environment:
+      - APPID=1111
+    depends_on:
+      - rds
+
+  ws2:
+    image: wsapp:latest
+    environment: 
+      - APPID=2222
+    depends_on: 
+     - rds
+
+  ws3:
+    image: wsapp:latest
+    environment: 
+      - APPID=3333
+    depends_on: 
+      - rds
+
+  rds:
+    image: redis
+    command: redis-server --requirepass mypassword
+    
