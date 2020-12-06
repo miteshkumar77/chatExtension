@@ -27,6 +27,7 @@ You will need:
 
 ### Server:
 
+If you want to run the multiserver version of the application, stay on the main branch, otherwise check out the singleserver branch. 
 
 1. Issue `docker build -t wsapp:latest ./server/` to build an image of the server
 2. Issue `docker build -t revproxy:latest ./reverseproxy` to build an image of the Nginx reverse proxy
