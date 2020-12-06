@@ -15,6 +15,3 @@ services:
       - APPID=1
     depends_on:
       - rds
-
-  rds:
-    image: redis
