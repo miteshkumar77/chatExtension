@@ -33,8 +33,9 @@ If you want to run the multiserver version of the application, stay on the main 
 
 1. Issue `docker build -t wsapp:latest ./server/` to build an image of the server
 2. Issue `docker build -t revproxy:latest ./reverseproxy` to build an image of the Nginx reverse proxy
-3. Issue `docker-compose up` to launch a number of application instances, the Nginx reverse proxy, and the redis instance
+3. Issue `docker-compose up` to launch a number of application instances, the Nginx reverse proxy, and the redis instance. Now you will be able to use the interface to connect to the chat room of the YouTube video that is open in your active tab. 
 
+![Chat](https://github.com/miteshkumar77/chatExtension/blob/main/cap2.png?raw=true)
 
 
 4. One can add more application instances by simply adding more 
@@ -49,6 +50,7 @@ ws< N >:
 services to the `docker-compose.yaml` file. Here, the `APPID` environment variable is simply used to identify the server in the log output. 
 
 Now you can see on the console that we can open multiple tabs and the reverse proxy will randomly assign us to an upstream websocket server. If two tabs are on the same video, both will get all messages sent within the chat room of that video. 
+
 
 
 ## How it works
