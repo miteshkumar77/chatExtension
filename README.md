@@ -25,39 +25,40 @@ You will need:
 
 5. Now refresh the extension from `chrome://extensions` and it should work. If you open a YouTube video and then the extension, you will see the interface.
 
+![Sign in](https://github.com/miteshkumar77/chatExtension/blob/main/cap1.jpg?raw=true)
+
 ### Server:
 
-If you want to run the multiserver version of the application, stay on the main branch, otherwise check out the singleserver branch. 
+If you want to run the multiserver version of the application, stay on the main branch, otherwise check out the singleserver branch. Regardless, the rest of the steps are the same. 
 
 1. Issue `docker build -t wsapp:latest ./server/` to build an image of the server
 2. Issue `docker build -t revproxy:latest ./reverseproxy` to build an image of the Nginx reverse proxy
 3. Issue `docker-compose up` to launch a number of application instances, the Nginx reverse proxy, and the redis instance
+
+
+
 4. One can add more application instances by simply adding more 
 ```
-wsn:
+ws< N >:
     image: wsapp:latest
     environment:
-      - APPID=N
+      - APPID=< N >
     depends_on:
       - rds
 ```
-to the `docker-compose.yaml` file. Here, the `APPID` environment variable is simply used to identify the server in the log output. 
+services to the `docker-compose.yaml` file. Here, the `APPID` environment variable is simply used to identify the server in the log output. 
 
-Now you can see on the console that we can open multiple tabs and the reverse proxy will randomly assign us to an upstream websocket server. If two tabs are on the same video, both will get all messages sent within the channel of that video. 
-
-
-![Sign in](https://github.com/miteshkumar77/chatExtension/blob/main/cap1.jpg?raw=true)
-
-![Chat](https://github.com/miteshkumar77/chatExtension/blob/main/cap2.png?raw=true)
+Now you can see on the console that we can open multiple tabs and the reverse proxy will randomly assign us to an upstream websocket server. If two tabs are on the same video, both will get all messages sent within the chat room of that video. 
 
 
 ## How it works
 
 ### Concurrency
-We have implemented a concurrent blocking queue to create a worker pool and a concurrent read optimized hashmap to store current rooms, users, and frequency data for rate limiting. The hashmap is implemented using sharding and `sync.RWMutex`. The queue is implemented by using go channels as locks. 
+We have implemented a concurrent blocking queue to create a task queue that is consumed by a worker pool. The queue is implemented using channels as locks so that waiting threads can stall until a new task is available without having to poll the queue themselves. 
+We have also implemented a concurrent read optimized hashmap to store concurrent rooms, users, and frequency data for rate limiting. The hashmap is implemented using sharding and `sync.RWMutex`. It also has a good API for doing updates based on original values of the map while avoiding race conditions.
 
 ### Redis pub/sub
-All `wsapp:latest` instances subscribe and publish to the same redis pub/sub channel. When an instance recieves a message from its websocket connection, it publishes the message to the common channel. Simultaneously, in another goroutine, the instance listens to the subscription and adds incoming messages to a `Jobs` concurrent queue. Multiple worker goroutines wait until the `Jobs` queue has a message in it, and then broadcast that message to all of the users connected to the particular room. In this way, all users in a particular room will recieve the message no matter what instance they are connected to, and we can scale to a much higher amount of websocket connections. 
+All `wsapp:latest` instances subscribe and publish to the same redis pub/sub channel. When an instance recieves a message from its websocket connection, it publishes the message to the common channel. Simultaneously, in another goroutine, the instance is continuously listening to the subscription and adding incoming messages to a `Jobs` concurrent queue. Multiple worker goroutines pull messages off of the `Jobs` queue and broadcast them to all of the users connected to the particular room associated with the message sender. In this way, all users in a particular room will recieve the message no matter what instance they are connected to, and we can scale to a much higher amount of websocket connections. 
 
 ### Rate limiting
 We use a concurrent hashmap in order to store how many messages are currently in the `Jobs` queue that haven't yet been processed. If this number reaches higher than a constant set threshold, the user's websocket is disconnected. This prevents someone from running a script to repeatedly send messages and put unnecessary load on the server.
