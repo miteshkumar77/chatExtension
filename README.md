@@ -38,16 +38,27 @@ If you want to run the multiserver version of the application, stay on the main 
 ![Chat](https://github.com/miteshkumar77/chatExtension/blob/main/cap2.png?raw=true)
 
 
-4. One can add more application instances by simply adding more 
+4. One can add more application instances by simply adding more of the following:
 ```
+# docker-compose.yaml
 ws< N >:
     image: wsapp:latest
     environment:
       - APPID=< N >
     depends_on:
       - rds
+     
+     
+# reverseproxy/templates/nginx.tmpl
+upstream ws-backend {
+         .
+         .
+         .
+  server ws< N >:8080;
+}
+
 ```
-services to the `docker-compose.yaml` file. Here, the `APPID` environment variable is simply used to identify the server in the log output. 
+Here, the `APPID` environment variable is simply used to identify the server in the log output. 
 
 Now you can see on the console that we can open multiple tabs and the reverse proxy will randomly assign us to an upstream websocket server. If two tabs are on the same video, both will get all messages sent within the chat room of that video. 
 
