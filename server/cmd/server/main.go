@@ -56,15 +56,16 @@ func wsEndpoint(w http.ResponseWriter, r *http.Request,
 	ws, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		println("Error upgrading socket!")
-		log.Fatal(err)
-
+		log.Println(err)
+                return
 	}
 
 	var t types.TransactionToken
 	err = ws.ReadJSON(&t)
 	if err != nil {
 		println("Error decoding json body!")
-		log.Fatal(err)
+		log.Println(err)
+		return
 	}
 
 	t.UserID = mgr.Connect(t.UserName, t.VideoID, ws)
@@ -74,7 +75,8 @@ func wsEndpoint(w http.ResponseWriter, r *http.Request,
 
 	if err != nil {
 		println("Error sending back the token!")
-		log.Fatal(err)
+		log.Println(err)
+		return
 	}
 
 	reader(ws, jobs, rateLimiter)
